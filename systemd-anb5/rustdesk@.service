@@ -1,0 +1,15 @@
+[Unit]
+Description=RustDesk Server Instance %i
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/rustdesk-runner.sh %i
+Restart=always
+User=rustdesk
+Group=rustdesk
+WorkingDirectory=/home/rustdesk
+
+[Install]
+WantedBy=multi-user.target
+

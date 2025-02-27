@@ -101,6 +101,7 @@ impl RendezvousServer {
         log::info!("Listening on tcp/udp :{}", port);
         log::info!("Listening on tcp :{}, extra port for NAT test", nat_port);
         log::info!("Listening on websocket :{}", ws_port);
+        log::debug!("Name: {}, ANB5 log url: {}, ANB5 log verbose: {}", get_arg("servername"), get_arg("logurl"), get_arg("logverbose"));
         let mut socket = create_udp_listener(port, rmem).await?;
         let (tx, mut rx) = mpsc::unbounded_channel::<Data>();
         let software_url = get_arg("software-url");
@@ -314,8 +315,12 @@ impl RendezvousServer {
         key: &str,
     ) -> ResultType<()> {
         if let Ok(msg_in) = RendezvousMessage::parse_from_bytes(bytes) {
+            let msg_in_clone = msg_in.to_string();
             match msg_in.union {
                 Some(rendezvous_message::Union::RegisterPeer(rp)) => {
+                    if rp.id != "(:test_hbbs:)" && get_arg("logverbose") == "Y" {
+                        anb5_log(addr.ip(), "RegisterPeer", msg_in_clone);
+                    }
                     // B registered
                     if !rp.id.is_empty() {
                         log::trace!("New peer registered: {:?} {:?}", &rp.id, &addr);
@@ -332,6 +337,9 @@ impl RendezvousServer {
                     }
                 }
                 Some(rendezvous_message::Union::RegisterPk(rk)) => {
+                    if get_arg("logverbose") == "Y" {
+                        anb5_log(addr.ip(), "RegisterPk", msg_in_clone);
+                    }
                     if rk.uuid.is_empty() || rk.pk.is_empty() {
                         return Ok(());
                     }
@@ -417,6 +425,7 @@ impl RendezvousServer {
                     socket.send(&msg_out, addr).await?
                 }
                 Some(rendezvous_message::Union::PunchHoleRequest(ph)) => {
+                    anb5_log(addr.ip(), "PunchHoleRequest", msg_in_clone);
                     if self.pm.is_in_memory(&ph.id).await {
                         self.handle_udp_punch_hole_request(addr, ph, key).await?;
                     } else {
@@ -429,12 +438,15 @@ impl RendezvousServer {
                     }
                 }
                 Some(rendezvous_message::Union::PunchHoleSent(phs)) => {
+                    anb5_log(addr.ip(), "PunchHoleSent", msg_in_clone);
                     self.handle_hole_sent(phs, addr, Some(socket)).await?;
                 }
                 Some(rendezvous_message::Union::LocalAddr(la)) => {
+                    anb5_log(addr.ip(), "LocalAddr", msg_in_clone);
                     self.handle_local_addr(la, addr, Some(socket)).await?;
                 }
                 Some(rendezvous_message::Union::ConfigureUpdate(mut cu)) => {
+                    anb5_log(addr.ip(), "ConfigureUpdate", msg_in_clone);
                     if try_into_v4(addr).ip().is_loopback() && cu.serial > self.inner.serial {
                         let mut inner: Inner = (*self.inner).clone();
                         inner.serial = cu.serial;
@@ -456,6 +468,7 @@ impl RendezvousServer {
                     }
                 }
                 Some(rendezvous_message::Union::SoftwareUpdate(su)) => {
+                    anb5_log(addr.ip(), "SoftwareUpdate", msg_in_clone);
                     if !self.inner.version.is_empty() && su.url != self.inner.version {
                         let mut msg_out = RendezvousMessage::new();
                         msg_out.set_software_update(SoftwareUpdate {
@@ -481,8 +494,10 @@ impl RendezvousServer {
         ws: bool,
     ) -> bool {
         if let Ok(msg_in) = RendezvousMessage::parse_from_bytes(bytes) {
+            let msg_in_clone = msg_in.to_string();
             match msg_in.union {
                 Some(rendezvous_message::Union::PunchHoleRequest(ph)) => {
+                    anb5_log(addr.ip(), "PunchHoleRequest", msg_in_clone);
                     // there maybe several attempt, so sink can be none
                     if let Some(sink) = sink.take() {
                         self.tcp_punch.lock().await.insert(try_into_v4(addr), sink);
@@ -491,6 +506,7 @@ impl RendezvousServer {
                     return true;
                 }
                 Some(rendezvous_message::Union::RequestRelay(mut rf)) => {
+                    anb5_log(addr.ip(), "RequestRelay", msg_in_clone);
                     // there maybe several attempt, so sink can be none
                     if let Some(sink) = sink.take() {
                         self.tcp_punch.lock().await.insert(try_into_v4(addr), sink);
@@ -505,10 +521,12 @@ impl RendezvousServer {
                     return true;
                 }
                 Some(rendezvous_message::Union::RelayResponse(mut rr)) => {
+                    anb5_log(addr.ip(), "RelayResponse", msg_in_clone);
                     let addr_b = AddrMangle::decode(&rr.socket_addr);
                     rr.socket_addr = Default::default();
                     let id = rr.id();
                     if !id.is_empty() {
+                        log::debug!("rr.id: {id} (get_pk)");
                         let pk = self.get_pk(&rr.version, id.to_owned()).await;
                         rr.set_pk(pk);
                     }
@@ -525,12 +543,15 @@ impl RendezvousServer {
                     allow_err!(self.send_to_tcp_sync(msg_out, addr_b).await);
                 }
                 Some(rendezvous_message::Union::PunchHoleSent(phs)) => {
+                    anb5_log(addr.ip(), "PunchHoleSent", msg_in_clone);
                     allow_err!(self.handle_hole_sent(phs, addr, None).await);
                 }
                 Some(rendezvous_message::Union::LocalAddr(la)) => {
+                    anb5_log(addr.ip(), "LocalAddr", msg_in_clone);
                     allow_err!(self.handle_local_addr(la, addr, None).await);
                 }
                 Some(rendezvous_message::Union::TestNatRequest(tar)) => {
+                    anb5_log(addr.ip(), "TestNatRequest", msg_in_clone);
                     let mut msg_out = RendezvousMessage::new();
                     let mut res = TestNatResponse {
                         port: addr.port() as _,
@@ -546,6 +567,7 @@ impl RendezvousServer {
                     Self::send_to_sink(sink, msg_out).await;
                 }
                 Some(rendezvous_message::Union::RegisterPk(_)) => {
+                    anb5_log(addr.ip(), "RegisterPk", msg_in_clone);
                     let res = register_pk_response::Result::NOT_SUPPORT;
                     let mut msg_out = RendezvousMessage::new();
                     msg_out.set_register_pk_response(RegisterPkResponse {
@@ -1095,7 +1117,7 @@ impl RendezvousServer {
     }
 
     async fn handle_listener(&self, stream: TcpStream, addr: SocketAddr, key: &str, ws: bool) {
-        log::debug!("Tcp connection from {:?}, ws: {}", addr, ws);
+        log::debug!("Tcp connection from {:?}, key: {}, ws: {}", addr, key.to_owned(), ws);
         let mut rs = self.clone();
         let key = key.to_owned();
         tokio::spawn(async move {

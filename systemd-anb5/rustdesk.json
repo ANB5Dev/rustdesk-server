@@ -1,0 +1,31 @@
+{
+	"self": "192.168.100.247",
+	"servers": [
+		{
+			"name": "demo1",
+			"public_key": "FOO",
+			"private_key": "BAR",
+			"port": 21116,
+			"single_bandwidth": 100,
+			"total_bandwidth": 200,
+			"limit_speed": 200,
+			"rust_log": "info",
+			"logurl": "",
+			"logverbose": "N",
+			"always_use_relay": "N"
+		},
+		{
+			"name": "demo2",
+			"public_key": "FOO",
+			"private_key": "BAR",
+			"port": 21126,
+			"single_bandwidth": 100,
+			"total_bandwidth": 200,
+			"limit_speed": 200,
+			"rust_log": "debug",
+			"logurl": "",
+			"logverbose": "Y",
+			"always_use_relay": "N"
+		}
+	]
+}

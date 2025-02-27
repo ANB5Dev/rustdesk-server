@@ -7,9 +7,37 @@ use sodiumoxide::crypto::sign;
 use std::{
     io::prelude::*,
     io::Read,
-    net::SocketAddr,
+    net::{IpAddr, SocketAddr},
     time::{Instant, SystemTime},
 };
+use reqwest::Client;
+use std::collections::HashMap;
+
+pub(crate) fn anb5_log(client_ip: IpAddr, action: &str, data: String) {
+    let client_ip = client_ip.to_string();
+    let action = action.to_string();
+    let url = get_arg("logurl");
+
+    if !url.is_empty() {
+        // Spawn a background task
+        let _ = tokio::spawn(async move {
+            let mut params = HashMap::new();
+            params.insert("server_name", get_arg_or("server_name", "Unnamed".to_owned()));
+            params.insert("client_ip", client_ip);
+            params.insert("action", action);
+            params.insert("data", data);
+
+            log::debug!("logging {:?} -> {}", &params, url);
+        
+            let client = Client::new();
+            let _ = client
+                .post(url)
+                .form(&params)
+                .send()
+                .await;
+        });
+    }
+}
 
 #[allow(dead_code)]
 pub(crate) fn get_expired_time() -> Instant {
@@ -191,28 +219,9 @@ pub async fn listen_signal() -> Result<()> {
 
 
 pub fn check_software_update() {
-    const ONE_DAY_IN_SECONDS: u64 = 60 * 60 * 24;
-    std::thread::spawn(move || loop {
-        std::thread::spawn(move || allow_err!(check_software_update_()));
-        std::thread::sleep(std::time::Duration::from_secs(ONE_DAY_IN_SECONDS));
-    });
 }
 
 #[tokio::main(flavor = "current_thread")]
 async fn check_software_update_() -> hbb_common::ResultType<()> {
-    let (request, url) = hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_SERVER.to_string());
-    let latest_release_response = reqwest::Client::builder().build()?
-        .post(url)
-        .json(&request)
-        .send()
-        .await?;
-
-    let bytes = latest_release_response.bytes().await?;
-    let resp: hbb_common::VersionCheckResponse = serde_json::from_slice(&bytes)?;
-    let response_url = resp.url;
-    let latest_release_version = response_url.rsplit('/').next().unwrap_or_default();
-    if get_version_number(&latest_release_version) > get_version_number(crate::version::VERSION) {
-       log::info!("new version is available: {}", latest_release_version);
-    }
     Ok(())
 }
