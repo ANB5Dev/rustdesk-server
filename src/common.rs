@@ -22,7 +22,7 @@ pub(crate) fn anb5_log(client_ip: IpAddr, action: &str, data: String) {
         // Spawn a background task
         let _ = tokio::spawn(async move {
             let mut params = HashMap::new();
-            params.insert("server_name", get_arg_or("server_name", "Unnamed".to_owned()));
+            params.insert("server_name", get_arg_or("servername", "Unnamed".to_owned()));
             params.insert("client_ip", client_ip);
             params.insert("action", action);
             params.insert("data", data);
