@@ -551,7 +551,9 @@ impl RendezvousServer {
                     allow_err!(self.handle_local_addr(la, addr, None).await);
                 }
                 Some(rendezvous_message::Union::TestNatRequest(tar)) => {
-                    anb5_log(addr.ip(), "TestNatRequest", msg_in_clone);
+                    if get_arg("logverbose") == "Y" {
+                        anb5_log(addr.ip(), "TestNatRequest", msg_in_clone);
+                    }
                     let mut msg_out = RendezvousMessage::new();
                     let mut res = TestNatResponse {
                         port: addr.port() as _,
