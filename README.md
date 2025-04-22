@@ -32,14 +32,13 @@ sudo cp ./systemd-anb5/rustdesk@.service /etc/systemd/system/rustdesk@.service
 sudo cp ./systemd-anb5/rustdesk-runner.sh /usr/local/bin/rustdesk-runner.sh
 sudo cp ./systemd-anb5/rustdesk.json /etc/rustdesk.json
 ```
-*TODO: file owners and rights*
 
 #### Edit config file
 ```bash
 vim /etc/rustdesk.json
 ```
 
-#### Generate new keypair
+#### For new servers: generate a keypair
 ```bash
 rustdesk-utils genkeypair
 ```
