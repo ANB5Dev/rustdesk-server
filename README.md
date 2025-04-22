@@ -2,7 +2,7 @@
 
 #### Preparation
 ```bash
-apt install rustup
+apt install rustup jq
 rustup default stable
 sudo useradd --system --create-home --home-dir /home/rustdesk --shell /usr/bin/bash rustdesk
 ```
