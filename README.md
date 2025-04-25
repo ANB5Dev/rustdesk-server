@@ -32,6 +32,7 @@ sudo cp ./systemd-anb5/rustdesk@.service /etc/systemd/system/rustdesk@.service
 sudo cp ./systemd-anb5/rustdesk-runner.sh /usr/local/bin/rustdesk-runner.sh
 sudo cp ./systemd-anb5/rustdesk.json /etc/rustdesk.json
 ```
+By default it runs under user `rustdesk`, this can be changed in `/etc/systemd/system/rustdesk@.service`.
 
 # Configure New Server
 
