@@ -44,4 +44,4 @@ export LIMIT_SPEED
 
 # Start hbbs and hbbr
 hbbr &
-hbbs -r "$SELF:$HBBS_PORT" -R "$SELF:$HBBR_PORT"
+hbbs --rendezvous-servers "$SELF:$HBBS_PORT" --relay-servers "$SELF:$HBBR_PORT"
