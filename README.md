@@ -1,4 +1,4 @@
-# Compile / setup server
+# Install Server
 
 #### Preparation
 ```bash
@@ -21,7 +21,7 @@ cargo build --release
 
 #### Test run
 ```bash
-RUST_LOG=debug PORT=21116 target/release/hbbs -R 192.168.100.247:21116 -r 192.168.100.247:21117
+RUST_LOG=debug PORT=21116 target/release/hbbs --rendezvous-servers <your IP or hostname>:21116 --relay-servers <your IP or hostname>:21117
 RUST_LOG=debug PORT=21116 target/release/hbbr
 ```
 
@@ -33,32 +33,70 @@ sudo cp ./systemd-anb5/rustdesk-runner.sh /usr/local/bin/rustdesk-runner.sh
 sudo cp ./systemd-anb5/rustdesk.json /etc/rustdesk.json
 ```
 
-#### Edit config file
-```bash
-vim /etc/rustdesk.json
-```
+# Configure New Server
 
-#### For new servers: generate a keypair
+#### Generate a new keypair
 ```bash
 rustdesk-utils genkeypair
 ```
+Copy these two keys and also keep a backup of them!
 
-#### Start systemd service
+#### Edit rustdesk servers config file
 ```bash
-systemctl start rustdesk@<server name in JSON>
+vim /etc/rustdesk.json
+```
+| Self                               | Description |
+|------------------------------------|-------------|
+| `self`                             | IP or hostname to server. |
+
+| Servers section                    | Description |
+|------------------------------------|-------------|
+| `name`                             | Name for the systemd instance. |
+| `public_key`, `private_key`        | Keys generated with `rustdesk-utils genkeypair`. |
+| `port`                             | Listening port for `hbbs` (rendezvous server). `hbbr` (relay server) uses `port + 1`. |
+| `single_bandwidth`, `total_bandwidth`, `limit_speed` | Relay server speed limits. |
+| `rust_log`                         | Stdout verbosity: `off`, `error`, `warn`, `info`, `debug`, `trace`. |
+| `logurl`                           | Send logs as POST to this URL. Parameters: `server_name`, `client_ip`, `action`, `data`. |
+| `logverbose`                       | Send verbose logs to `logurl`. Use `Y` or `N`. |
+| `always_use_relay`                 | Disallow direct peer connections. Use `Y` or `N`. |
+
+#### Start systemd instance
+```bash
+systemctl start rustdesk@<name>
 ```
 
-#### Check daemon status
+#### Check daemon status for all instances
 ```bash
 systemctl status rustdesk@*
 ```
 
-#### Remove systemd statuses for non-existing instances
+#### Enable start at boot
+```bash
+systemctl enable rustdesk@<name>
+```
+
+#### Maintenance
+
+##### Restart after editing /etc/rustdesk.json
+```bash
+systemctl restart rustdesk@<name>
+```
+It takes approximately 15 seconds before all clients have reconnected.
+
+##### Remove systemd statuses for non-existing instances
 ```bash
 systemctl reset-failed
 ```
 
-# Documentation
+# Log statuses
+
+PunchHoleRequest = connection request
+
+PunchHoleSent = start P2P
+
+RelayResponse = start relayed connection
+
+# Reference
 
 ### Environment variables
 https://github.com/rustdesk/rustdesk-server?tab=readme-ov-file#env-variables
@@ -76,22 +114,11 @@ https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/install/#ports
 	21117 PORT+1 (TCP), for the Relay services
 	21119 PORT+3 (TCP), support web clients
 
-# Logging
-
-PunchHoleRequest = connection request
-
-PunchHoleSent = start P2P
-
-RelayResponse = start relayed connection
-
 <!--
 # Outdated / backup
 
 sudo chown -R rustdesk:rustdesk /home/rustdesk /etc/rustdesk.json /usr/local/bin/rustdesk-runner.sh
 sudo chmod 750 /usr/local/bin/rustdesk-runner.sh
-
-RUST_LOG=debug KEY=Kbxy... PORT=21116 ALWAYS_USE_RELAY=N DB_URL=rustdesk.ASCI-demo.sqlite3 SERVERNAME="ASCI-test" LOGURL="https://...?token=..." LOGVERBOSE=Y ~/rustdesk-server/target/release/hbbs -r 192.168.100.247:21116 -R 192.168.100.247:21117
-RUST_LOG=debug KEY=Kbxy... PORT=21116 SINGLE_BANDWIDTH=100 TOTAL_BANDWIDTH=200 LIMIT_SPEED=200 ~/rustdesk-server/target/release/hbbr
 
 ## link to our fork of hbb_common
 cd libs/hbb_common
