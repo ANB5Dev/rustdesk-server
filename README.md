@@ -82,7 +82,7 @@ systemctl enable rustdesk@<name>
 ```bash
 systemctl restart rustdesk@<name>
 ```
-It takes approximately 15 seconds before all clients have reconnected.
+It takes 15-30 seconds before all clients have reconnected.
 
 ##### Remove systemd statuses for non-existing instances
 ```bash
