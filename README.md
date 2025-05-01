@@ -3,8 +3,9 @@
 #### Preparation
 ```bash
 apt install rustup jq
-rustup default stable
 sudo useradd --system --create-home --home-dir /home/rustdesk --shell /usr/bin/bash rustdesk
+su - rustdesk
+rustup default stable
 ```
 *if needed:* open firewall on 5 subsequent ports, default: 21115-21119 (port-1 through port+4)
 
