@@ -30,6 +30,7 @@ RUST_LOG=debug PORT=21116 target/release/hbbr
 ```bash
 sudo cp ./target/release/{hbbr,hbbs,rustdesk-utils} /usr/local/bin/
 sudo cp ./systemd-anb5/rustdesk@.service /etc/systemd/system/rustdesk@.service
+sudo systemctl daemon-reload
 sudo cp ./systemd-anb5/rustdesk-runner.sh /usr/local/bin/rustdesk-runner.sh
 sudo cp ./systemd-anb5/rustdesk.json /etc/rustdesk.json
 ```
