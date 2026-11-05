@@ -8,12 +8,8 @@ use std::{
     fs,
     io::prelude::*,
     io::Read,
-<<<<<<< HEAD
-    net::{IpAddr, SocketAddr},
-=======
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
->>>>>>> upstream/master
     time::{Instant, SystemTime},
 };
 use reqwest::Client;
